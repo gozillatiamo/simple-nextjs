@@ -1,104 +1,66 @@
 import bcrypt from 'bcrypt';
-import { db } from '@vercel/postgres';
 import { invoices, customers, revenue, users } from '../lib/placeholder-data';
+import { PoolClient } from 'pg';
+import { pool, db } from '../lib/db';
+import type * as s from 'zapatos/schema';
 
-const client = await db.connect();
 
-async function seedUsers() {
-  await client.sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-  await client.sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
-    );
-  `;
-
+async function seedUsers(txn: PoolClient) {
   const insertedUsers = await Promise.all(
     users.map(async (user) => {
       const hashedPassword = await bcrypt.hash(user.password, 10);
-      return client.sql`
-        INSERT INTO users (id, name, email, password)
-        VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
+      user.password = hashedPassword;
+      return db.sql<s.users.SQL>`
+        INSERT INTO ${"users"} (${db.cols(user)})
+        VALUES (${db.vals(user)})
         ON CONFLICT (id) DO NOTHING;
-      `;
+      `.run(txn);
     }),
   );
 
   return insertedUsers;
 }
 
-async function seedInvoices() {
-  await client.sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-
-  await client.sql`
-    CREATE TABLE IF NOT EXISTS invoices (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-      customer_id UUID NOT NULL,
-      amount INT NOT NULL,
-      status VARCHAR(255) NOT NULL,
-      date DATE NOT NULL
-    );
-  `;
-
+async function seedInvoices(txn: PoolClient) {
   const insertedInvoices = await Promise.all(
     invoices.map(
-      (invoice) => client.sql`
-        INSERT INTO invoices (customer_id, amount, status, date)
-        VALUES (${invoice.customer_id}, ${invoice.amount}, ${invoice.status}, ${invoice.date})
+      (invoice) => db.sql<s.invoices.SQL>`
+        INSERT INTO ${"invoices"} (${db.cols(invoice)})
+        VALUES (${db.vals(invoice)})
         ON CONFLICT (id) DO NOTHING;
-      `,
+      `.run(txn),
     ),
   );
 
   return insertedInvoices;
 }
 
-async function seedCustomers() {
-  await client.sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-
-  await client.sql`
-    CREATE TABLE IF NOT EXISTS customers (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      email VARCHAR(255) NOT NULL,
-      image_url VARCHAR(255) NOT NULL
-    );
-  `;
-
+async function seedCustomers(txn: PoolClient) {
   const insertedCustomers = await Promise.all(
     customers.map(
-      (customer) => client.sql`
-        INSERT INTO customers (id, name, email, image_url)
-        VALUES (${customer.id}, ${customer.name}, ${customer.email}, ${customer.image_url})
+      (customer) => db.sql<s.customers.SQL>`
+        INSERT INTO ${"customers"} (${db.cols(customer)})
+        VALUES (${db.vals(customer)})
         ON CONFLICT (id) DO NOTHING;
-      `,
+      `.run(txn),
     ),
   );
 
   return insertedCustomers;
 }
 
-async function seedRevenue() {
-  await client.sql`
-    CREATE TABLE IF NOT EXISTS revenue (
-      month VARCHAR(4) NOT NULL UNIQUE,
-      revenue INT NOT NULL
-    );
-  `;
+async function seedRevenue(txn: PoolClient) {
 
   const insertedRevenue = await Promise.all(
-    revenue.map(
-      (rev) => client.sql`
-        INSERT INTO revenue (month, revenue)
-        VALUES (${rev.month}, ${rev.revenue})
+    revenue.map((rev) => 
+      db.sql<s.revenue.SQL>`
+        INSERT INTO ${"revenue"} (${db.cols(rev)})
+        VALUES (${db.vals(rev)})
         ON CONFLICT (month) DO NOTHING;
-      `,
-    ),
+      `.run(txn)
+    )
   );
-
-  return insertedRevenue;
+   return insertedRevenue;
 }
 
 export async function GET() {
@@ -107,16 +69,16 @@ export async function GET() {
   //     'Uncomment this file and remove this line. You can delete this file when you are finished.',
   // });
   try {
-    await client.sql`BEGIN`;
-    await seedUsers();
-    await seedCustomers();
-    await seedInvoices();
-    await seedRevenue();
-    await client.sql`COMMIT`;
+    await db.serializable(pool, async txnClient => {
+      await seedUsers(txnClient); 
+      await seedCustomers(txnClient);
+      await seedInvoices(txnClient);
+      await seedRevenue(txnClient);
+    });
 
     return Response.json({ message: 'Database seeded successfully' });
   } catch (error) {
-    await client.sql`ROLLBACK`;
+    console.log(error)
     return Response.json({ error }, { status: 500 });
   }
 }

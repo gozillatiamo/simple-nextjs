@@ -1,0 +1,20 @@
+{
+  "db": {
+    "connectionString": "{{DATABASE_URL}}"
+  },
+  "outDir": "./app/lib",
+  "progressListener": true,
+  "warningListener": true,
+  "columnOptions": {
+    "*": {
+      "createdAt": {
+        "insert": "excluded",
+        "update": "excluded"
+      },
+      "updatedAt": {
+        "insert": "excluded",
+        "update": "excluded"
+      }
+    }
+  }
+}

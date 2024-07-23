@@ -1,5 +1,31 @@
-## Next.js App Router Course - Starter
+# Couple-T Company Web
 
-This is the starter template for the Next.js App Router Course. It contains the starting code for the dashboard application.
+## Relationship Database(Postgres)
 
-For more information, see the [course curriculum](https://nextjs.org/learn) on the Next.js Website.
+### How to run
+
+```sh
+docker compose up -d
+```
+
+### Migration
+
+Create a new migration
+
+```sh
+docker compose run --rm company-migrations new {migration_name} 
+```
+
+Run the migrations
+
+```sh
+docker compose run --rm company-migrations migrate
+```
+
+### Generate Database Schema Typescript(Zapatos)
+
+To utilize Zapatos (an SQL builder with type safety), it is necessary to generate a TypeScript schema whenever there are changes in the database.
+
+```sh
+DATABASE_URL=postgres://postgres:password123@localhost:10032/company_db?sslmode=disable pnpm zapatos
+```
