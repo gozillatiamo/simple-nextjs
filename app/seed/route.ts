@@ -78,7 +78,7 @@ export async function GET() {
 
     return Response.json({ message: 'Database seeded successfully' });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return Response.json({ error }, { status: 500 });
   }
 }
