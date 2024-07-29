@@ -69,9 +69,9 @@ export async function fetchCardData() {
     console.log('Fetching card data data...');
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
-    const invoiceCountPromise = db.sql<s.invoices.SQL, [{count: number}]>`SELECT COUNT(*) FROM ${"invoices"}`.run(pool);
-    const customerCountPromise = db.sql<s.customers.SQL, [{count: number}]>`SELECT COUNT(*) FROM ${"customers"}`.run(pool);
-    const invoiceStatusPromise = db.sql<s.invoices.SQL, [{paid: number, pending: number}]>`SELECT
+    const invoiceCountPromise = db.sql<s.invoices.SQL, [{ count: number }]>`SELECT COUNT(*) FROM ${"invoices"}`.run(pool);
+    const customerCountPromise = db.sql<s.customers.SQL, [{ count: number }]>`SELECT COUNT(*) FROM ${"customers"}`.run(pool);
+    const invoiceStatusPromise = db.sql<s.invoices.SQL, [{ paid: number, pending: number }]>`SELECT
          SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
          SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
          FROM invoices`.run(pool);
@@ -110,7 +110,7 @@ export async function fetchFilteredInvoices(
   type invoiceCustomer = s.invoices.SQL | s.customers.SQL;
   type invoiceCustomerResult = {
     id: string
-    amount: number 
+    amount: number
     date: string
     status: string
     name: string
@@ -192,6 +192,7 @@ export async function fetchInvoiceById(id: string) {
       amount: invoice.amount / 100,
     }));
 
+    console.log(invoice);
     return invoice[0];
   } catch (error) {
     console.error('Database Error:', error);
