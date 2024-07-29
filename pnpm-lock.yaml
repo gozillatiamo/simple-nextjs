@@ -87,6 +87,9 @@ importers:
       eslint-config-next:
         specifier: ^14.2.5
         version: 14.2.5(eslint@8.57.0)(typescript@5.5.2)
+      eslint-plugin-jsx-a11y:
+        specifier: ^6.9.0
+        version: 6.9.0(eslint@8.57.0)
 
 packages:
 
