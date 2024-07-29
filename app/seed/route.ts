@@ -64,10 +64,6 @@ async function seedRevenue(txn: PoolClient) {
 }
 
 export async function GET() {
-  // return Response.json({
-  //   message:
-  //     'Uncomment this file and remove this line. You can delete this file when you are finished.',
-  // });
   try {
     await db.serializable(pool, async txnClient => {
       await seedUsers(txnClient); 
